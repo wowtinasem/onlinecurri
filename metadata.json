@@ -1,0 +1,7 @@
+{
+  "name": "온라인강좌리스트",
+  "description": "A smart online course organizer that allows users to manage their learning materials, extract curriculum structures using AI, and chat with a virtual tutor based on their course content.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
