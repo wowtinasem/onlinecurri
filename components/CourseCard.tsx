@@ -30,7 +30,15 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onDelete }) => {
         </div>
         
         <div className="flex items-center space-x-1 md:space-x-3">
-          {/* 휴지통 아이콘이 제거된 영역: 확장/축소 화살표만 유지 */}
+          {onDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+              title="강좌 삭제"
+            >
+              <i className="fas fa-trash-alt"></i>
+            </button>
+          )}
           <div className={`w-10 h-10 flex items-center justify-center text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-blue-600' : ''}`}>
             <i className="fas fa-chevron-down"></i>
           </div>

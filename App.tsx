@@ -4,6 +4,7 @@ import { Course } from './types';
 import { CourseCard } from './components/CourseCard';
 import { AddCourseModal } from './components/AddCourseModal';
 import { Chatbot } from './components/Chatbot';
+import { geminiService } from './services/geminiService';
 
 const INITIAL_COURSES: Course[] = [
   {
@@ -43,6 +44,18 @@ const App: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>(INITIAL_COURSES);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [apiKey, setApiKey] = useState(geminiService.getApiKey());
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [tempApiKey, setTempApiKey] = useState('');
+
+  const handleSaveApiKey = () => {
+    if (tempApiKey.trim()) {
+      geminiService.setApiKey(tempApiKey.trim());
+      setApiKey(tempApiKey.trim());
+      setTempApiKey('');
+      setShowApiKeyInput(false);
+    }
+  };
 
   const filteredCourses = useMemo(() => {
     const q = searchQuery.toLowerCase();
@@ -73,21 +86,71 @@ const App: React.FC = () => {
             </div>
             <h1 className="text-xl font-bold text-white tracking-tight">CourseVault<span className="text-blue-500">AI</span></h1>
           </div>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="hidden md:flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-900/20 border border-blue-500/50"
-          >
-            <i className="fas fa-plus"></i>
-            <span>강좌 추가하기</span>
-          </button>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="md:hidden w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg"
-          >
-            <i className="fas fa-plus"></i>
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => { setTempApiKey(apiKey); setShowApiKeyInput(!showApiKeyInput); }}
+              className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all border ${
+                apiKey
+                  ? 'bg-emerald-600/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-600/30'
+                  : 'bg-amber-600/20 text-amber-400 border-amber-500/30 hover:bg-amber-600/30 animate-pulse'
+              }`}
+            >
+              <i className={`fas ${apiKey ? 'fa-key' : 'fa-exclamation-triangle'}`}></i>
+              <span className="hidden md:inline">{apiKey ? 'API 키 설정됨' : 'API 키 필요'}</span>
+            </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="hidden md:flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-900/20 border border-blue-500/50"
+            >
+              <i className="fas fa-plus"></i>
+              <span>강좌 추가하기</span>
+            </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="md:hidden w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg"
+            >
+              <i className="fas fa-plus"></i>
+            </button>
+          </div>
         </div>
       </header>
+
+      {showApiKeyInput && (
+        <div className="bg-slate-800 border-b border-slate-700">
+          <div className="max-w-6xl mx-auto px-4 py-4">
+            <div className="flex items-center space-x-3">
+              <div className="flex-1 relative">
+                <i className="fas fa-key absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input
+                  type="password"
+                  value={tempApiKey}
+                  onChange={e => setTempApiKey(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSaveApiKey()}
+                  placeholder="Gemini API 키를 입력하세요 (Google AI Studio에서 발급)"
+                  className="w-full pl-11 pr-4 py-2.5 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                />
+              </div>
+              <button
+                onClick={handleSaveApiKey}
+                disabled={!tempApiKey.trim()}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all disabled:opacity-50"
+              >
+                저장
+              </button>
+              <button
+                onClick={() => setShowApiKeyInput(false)}
+                className="px-3 py-2.5 text-slate-400 hover:text-white transition-colors"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 mt-2">
+              <i className="fas fa-lock mr-1"></i>
+              API 키는 브라우저 로컬 스토리지에만 저장되며 서버로 전송되지 않습니다.
+            </p>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-6xl mx-auto px-4 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">

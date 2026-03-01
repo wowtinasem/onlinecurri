@@ -2,22 +2,49 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Course, MajorCategory, Message } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+let ai: GoogleGenAI | null = null;
+let currentApiKey: string = '';
+
+function getAI(): GoogleGenAI {
+  const storedKey = localStorage.getItem('gemini_api_key') || '';
+  if (!storedKey) {
+    throw new Error("API_KEY_MISSING");
+  }
+  if (!ai || storedKey !== currentApiKey) {
+    currentApiKey = storedKey;
+    ai = new GoogleGenAI({ apiKey: storedKey });
+  }
+  return ai;
+}
 
 export const geminiService = {
+  setApiKey(key: string) {
+    localStorage.setItem('gemini_api_key', key);
+    currentApiKey = key;
+    ai = new GoogleGenAI({ apiKey: key });
+  },
+
+  getApiKey(): string {
+    return localStorage.getItem('gemini_api_key') || '';
+  },
+
+  hasApiKey(): boolean {
+    return !!localStorage.getItem('gemini_api_key');
+  },
+
   /**
    * 텍스트, 이미지, 파일 또는 URL을 분석하여 [대목차-중목차-소목차] 구조로 변환합니다.
    */
   async parseCurriculum(input: string | { data: string, mimeType: string }): Promise<Partial<Course>> {
     const isText = typeof input === 'string';
     const isUrl = isText && (input.startsWith('http://') || input.startsWith('https://'));
-    
+
     let prompt = "";
     let tools: any[] = [];
     const modelName = isUrl ? 'gemini-3-pro-image-preview' : 'gemini-3-flash-preview';
 
     if (isUrl) {
-      prompt = `다음 URL에 접속하여 강의 정보를 추출해주세요: ${input}. 
+      prompt = `다음 URL에 접속하여 강의 정보를 추출해주세요: ${input}.
       반드시 다음 구조의 JSON으로 응답하세요:
       - title: 강좌명
       - platform: 플랫폼
@@ -52,10 +79,10 @@ export const geminiService = {
       }`;
     }
 
-    const response = await ai.models.generateContent({
+    const response = await getAI().models.generateContent({
       model: modelName,
-      contents: isText 
-        ? prompt 
+      contents: isText
+        ? prompt
         : { parts: [{ inlineData: input }, { text: prompt }] },
       config: {
         tools: tools,
@@ -124,19 +151,25 @@ export const geminiService = {
   },
 
   async getChatResponse(history: Message[], courses: Course[], userQuery: string): Promise<string> {
-    const context = courses.map(c => 
-      `강의: ${c.title}. 커리큘럼: ${c.curriculum.map(major => 
-        `[대]${major.title}: ${major.middles.map(mid => 
+    const context = courses.map(c =>
+      `강의: ${c.title}. 커리큘럼: ${c.curriculum.map(major =>
+        `[대]${major.title}: ${major.middles.map(mid =>
           `[중]${mid.title}(소: ${mid.minors.map(min => min.title).join(', ')})`
         ).join('; ')}`
       ).join('\n')}`
     ).join('\n\n');
 
-    const chat = ai.chats.create({
+    const chatHistory = history.slice(1).map(msg => ({
+      role: msg.role === 'user' ? 'user' as const : 'model' as const,
+      parts: [{ text: msg.content }]
+    }));
+
+    const chat = getAI().chats.create({
       model: 'gemini-3-flash-preview',
       config: {
-        systemInstruction: `당신은 CourseVault AI입니다. 사용자의 3단계 계층 구조 강좌 데이터를 바탕으로 학습을 도와주세요.`
-      }
+        systemInstruction: `당신은 CourseVault AI입니다. 사용자의 3단계 계층 구조 강좌 데이터를 바탕으로 학습을 도와주세요.\n\n[보관 중인 강좌 정보]\n${context}`
+      },
+      history: chatHistory
     });
 
     const response = await chat.sendMessage({ message: userQuery });

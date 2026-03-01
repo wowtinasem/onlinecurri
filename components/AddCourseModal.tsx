@@ -35,8 +35,10 @@ export const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose,
         curriculum: result.curriculum || []
       });
       resetAndClose();
-    } catch (err) {
-      setError("콘텐츠 분석에 실패했습니다. 올바른 URL이나 텍스트인지 확인해주세요.");
+    } catch (err: any) {
+      setError(err?.message === 'API_KEY_MISSING'
+        ? "Gemini API 키가 설정되지 않았습니다. 상단의 'API 키 필요' 버튼을 눌러 키를 입력해주세요."
+        : "콘텐츠 분석에 실패했습니다. 올바른 URL이나 텍스트인지 확인해주세요.");
     } finally {
       setIsLoading(false);
     }
@@ -87,8 +89,10 @@ export const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose,
           curriculum: result.curriculum || []
         });
         resetAndClose();
-      } catch (err) {
-        setError("해당 파일 형식에서 커리큘럼을 추출할 수 없습니다. 텍스트를 직접 복사해 넣어보세요.");
+      } catch (err: any) {
+        setError(err?.message === 'API_KEY_MISSING'
+          ? "Gemini API 키가 설정되지 않았습니다. 상단의 'API 키 필요' 버튼을 눌러 키를 입력해주세요."
+          : "해당 파일 형식에서 커리큘럼을 추출할 수 없습니다. 텍스트를 직접 복사해 넣어보세요.");
       } finally {
         setIsLoading(false);
       }
