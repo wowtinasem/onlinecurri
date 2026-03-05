@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface MaterialModalProps {
   isOpen: boolean;
@@ -14,6 +14,12 @@ export const MaterialModal: React.FC<MaterialModalProps> = ({
   isOpen, courseTitle, currentUrl, onClose, onSave, onRemove
 }) => {
   const [url, setUrl] = useState(currentUrl || '');
+
+  useEffect(() => {
+    if (isOpen) {
+      setUrl(currentUrl || '');
+    }
+  }, [isOpen, currentUrl]);
 
   if (!isOpen) return null;
 

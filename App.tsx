@@ -33,6 +33,7 @@ const App: React.FC = () => {
   });
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [materialModalCourse, setMaterialModalCourse] = useState<Course | null>(null);
+  const [userValidating, setUserValidating] = useState(() => !!localStorage.getItem('currentUser'));
 
   const isAdmin = isAuthenticated && !!apiKey;
 
@@ -46,7 +47,7 @@ const App: React.FC = () => {
 
   // Re-validate user session on mount
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) { setUserValidating(false); return; }
     firebaseService.getUser(currentUser.id).then(freshUser => {
       if (!freshUser) {
         setCurrentUser(null);
@@ -55,7 +56,7 @@ const App: React.FC = () => {
         setCurrentUser(freshUser);
         localStorage.setItem('currentUser', JSON.stringify(freshUser));
       }
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setUserValidating(false));
   }, []);
 
   const handleUserLogin = (user: User) => {
@@ -174,7 +175,7 @@ const App: React.FC = () => {
           </a>
           <div className="flex items-center space-x-2">
             {/* User login/register button */}
-            {!isAuthenticated && (
+            {!isAuthenticated && !userValidating && (
               currentUser ? (
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-slate-300 hidden md:inline">
