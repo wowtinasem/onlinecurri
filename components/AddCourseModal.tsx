@@ -1,12 +1,69 @@
 
 import React, { useState } from 'react';
-import { AddMethod, Course } from '../types';
+import { AddMethod, Course, MajorCategory } from '../types';
 import { geminiService } from '../services/geminiService';
 
 interface AddCourseModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (course: Course) => void;
+}
+
+function parseCurriculumText(text: string): MajorCategory[] {
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length === 0) return [];
+
+  const majors: MajorCategory[] = [];
+  let currentMajor: MajorCategory | null = null;
+  let currentMiddle: { id: string; title: string; minors: { id: string; title: string }[] } | null = null;
+
+  for (const line of lines) {
+    const stripped = line.replace(/^\s*[-•·]\s*/, '').replace(/^\s*\d+[\.\)]\s*/, '');
+    const indent = line.search(/\S/);
+
+    if (indent <= 0) {
+      // 대목차
+      currentMajor = {
+        id: `major-${majors.length}-${Date.now()}`,
+        title: stripped.trim(),
+        middles: []
+      };
+      majors.push(currentMajor);
+      currentMiddle = null;
+    } else if (indent <= 4) {
+      // 중목차
+      if (!currentMajor) {
+        currentMajor = { id: `major-0-${Date.now()}`, title: '커리큘럼', middles: [] };
+        majors.push(currentMajor);
+      }
+      currentMiddle = {
+        id: `middle-${majors.length - 1}-${currentMajor.middles.length}-${Date.now()}`,
+        title: stripped.trim(),
+        minors: []
+      };
+      currentMajor.middles.push(currentMiddle);
+    } else {
+      // 소목차
+      if (!currentMajor) {
+        currentMajor = { id: `major-0-${Date.now()}`, title: '커리큘럼', middles: [] };
+        majors.push(currentMajor);
+      }
+      if (!currentMiddle) {
+        currentMiddle = {
+          id: `middle-${majors.length - 1}-0-${Date.now()}`,
+          title: '섹션',
+          minors: []
+        };
+        currentMajor.middles.push(currentMiddle);
+      }
+      currentMiddle.minors.push({
+        id: `minor-${majors.length - 1}-${currentMajor.middles.length - 1}-${currentMiddle.minors.length}-${Date.now()}`,
+        title: stripped.trim()
+      });
+    }
+  }
+
+  return majors;
 }
 
 export const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose, onAdd }) => {
@@ -19,6 +76,7 @@ export const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose,
   const [selectedPlatform, setSelectedPlatform] = useState('');
   const [customPlatform, setCustomPlatform] = useState('');
   const [instructor, setInstructor] = useState('');
+  const [curriculumText, setCurriculumText] = useState('');
   const [smartInput, setSmartInput] = useState('');
 
   const platform = selectedPlatform === '직접입력' ? customPlatform : selectedPlatform;
@@ -55,7 +113,7 @@ export const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose,
       title,
       platform,
       instructor,
-      curriculum: []
+      curriculum: parseCurriculumText(curriculumText)
     });
     resetAndClose();
   };
@@ -65,6 +123,7 @@ export const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose,
     setSelectedPlatform('');
     setCustomPlatform('');
     setInstructor('');
+    setCurriculumText('');
     setSmartInput('');
     setError(null);
     onClose();
@@ -188,7 +247,21 @@ export const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose,
                   className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all"
                 />
               </div>
-              <button 
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">커리큘럼 (선택)</label>
+                <textarea
+                  value={curriculumText}
+                  onChange={e => setCurriculumText(e.target.value)}
+                  rows={6}
+                  placeholder={"대목차 제목\n  중목차 제목\n    소목차 항목1\n    소목차 항목2\n대목차 제목2\n  중목차 제목\n    소목차 항목"}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all resize-none text-sm font-mono"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  <i className="fas fa-info-circle mr-1"></i>
+                  들여쓰기로 계층을 구분합니다: 없음=대목차, 2칸=중목차, 4칸 이상=소목차
+                </p>
+              </div>
+              <button
                 onClick={handleManualAdd}
                 disabled={!title}
                 className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-xl transition-colors mt-4 disabled:opacity-50 shadow-lg shadow-blue-200"
