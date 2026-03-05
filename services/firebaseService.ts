@@ -5,11 +5,12 @@ import {
   set,
   get,
   remove,
+  update,
   onValue,
   off,
   DataSnapshot
 } from 'firebase/database';
-import { Course } from '../types';
+import { Course, User } from '../types';
 
 // Firebase config (공개 가능 — 보안은 Database Rules에서 관리)
 const firebaseConfig = {
@@ -26,6 +27,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const COURSES_REF = 'courses';
+const USERS_REF = 'users';
 
 export const firebaseService = {
   subscribeToCourses(callback: (courses: Course[]) => void): () => void {
@@ -68,5 +70,59 @@ export const firebaseService = {
   async changeAdminPassword(newPassword: string): Promise<void> {
     const passwordRef = ref(db, 'admin/password');
     await set(passwordRef, newPassword);
+  },
+
+  // User management
+  async registerUser(name: string, email: string, password: string): Promise<User> {
+    const snapshot = await get(ref(db, USERS_REF));
+    const data = snapshot.val();
+    if (data) {
+      const exists = Object.values(data as Record<string, User>).some(u => u.email === email);
+      if (exists) throw new Error('EMAIL_EXISTS');
+    }
+    const id = crypto.randomUUID();
+    const user: User = { id, name, email, password, approved: false, createdAt: Date.now() };
+    await set(ref(db, `${USERS_REF}/${id}`), user);
+    return user;
+  },
+
+  async loginUser(email: string, password: string): Promise<User> {
+    const snapshot = await get(ref(db, USERS_REF));
+    const data = snapshot.val();
+    if (!data) throw new Error('USER_NOT_FOUND');
+    const user = Object.values(data as Record<string, User>).find(u => u.email === email && u.password === password);
+    if (!user) throw new Error('INVALID_CREDENTIALS');
+    return user;
+  },
+
+  async getUser(userId: string): Promise<User | null> {
+    const snapshot = await get(ref(db, `${USERS_REF}/${userId}`));
+    return snapshot.val() as User | null;
+  },
+
+  subscribeToUsers(callback: (users: User[]) => void): () => void {
+    const usersRef = ref(db, USERS_REF);
+    const listener = onValue(usersRef, (snapshot: DataSnapshot) => {
+      const data = snapshot.val();
+      callback(data ? Object.values(data) : []);
+    });
+    return () => off(usersRef, 'value', listener);
+  },
+
+  async approveUser(userId: string): Promise<void> {
+    await update(ref(db, `${USERS_REF}/${userId}`), { approved: true });
+  },
+
+  async rejectUser(userId: string): Promise<void> {
+    await remove(ref(db, `${USERS_REF}/${userId}`));
+  },
+
+  // Material URL management
+  async setMaterialUrl(courseId: string, materialUrl: string): Promise<void> {
+    await update(ref(db, `${COURSES_REF}/${courseId}`), { materialUrl });
+  },
+
+  async removeMaterialUrl(courseId: string): Promise<void> {
+    await update(ref(db, `${COURSES_REF}/${courseId}`), { materialUrl: null });
   }
 };

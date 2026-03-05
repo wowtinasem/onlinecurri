@@ -23,6 +23,16 @@ export interface Course {
   instructor: string;
   curriculum: MajorCategory[];
   description?: string;
+  materialUrl?: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  approved: boolean;
+  createdAt: number;
 }
 
 export interface Message {

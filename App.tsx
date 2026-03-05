@@ -1,8 +1,11 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Course } from './types';
+import { Course, User } from './types';
 import { CourseCard } from './components/CourseCard';
 import { AddCourseModal } from './components/AddCourseModal';
+import { AuthModal } from './components/AuthModal';
+import { AdminUsersPanel } from './components/AdminUsersPanel';
+import { MaterialModal } from './components/MaterialModal';
 import { Chatbot } from './components/Chatbot';
 import { geminiService } from './services/geminiService';
 import { firebaseService } from './services/firebaseService';
@@ -23,6 +26,14 @@ const App: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordMsg, setPasswordMsg] = useState('');
 
+  // User auth state
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const stored = localStorage.getItem('currentUser');
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [materialModalCourse, setMaterialModalCourse] = useState<Course | null>(null);
+
   const isAdmin = isAuthenticated && !!apiKey;
 
   useEffect(() => {
@@ -32,6 +43,48 @@ const App: React.FC = () => {
     });
     return () => unsubscribe();
   }, []);
+
+  // Re-validate user session on mount
+  useEffect(() => {
+    if (!currentUser) return;
+    firebaseService.getUser(currentUser.id).then(freshUser => {
+      if (!freshUser) {
+        setCurrentUser(null);
+        localStorage.removeItem('currentUser');
+      } else {
+        setCurrentUser(freshUser);
+        localStorage.setItem('currentUser', JSON.stringify(freshUser));
+      }
+    }).catch(() => {});
+  }, []);
+
+  const handleUserLogin = (user: User) => {
+    setCurrentUser(user);
+    localStorage.setItem('currentUser', JSON.stringify(user));
+  };
+
+  const handleUserLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('currentUser');
+  };
+
+  const handleMaterialSave = async (url: string) => {
+    if (!materialModalCourse) return;
+    try {
+      await firebaseService.setMaterialUrl(materialModalCourse.id, url);
+    } catch {
+      alert('교안 링크 저장에 실패했습니다.');
+    }
+  };
+
+  const handleMaterialRemove = async () => {
+    if (!materialModalCourse) return;
+    try {
+      await firebaseService.removeMaterialUrl(materialModalCourse.id);
+    } catch {
+      alert('교안 링크 삭제에 실패했습니다.');
+    }
+  };
 
   const handleAdminLogin = async () => {
     if (!adminPassword.trim()) return;
@@ -120,6 +173,29 @@ const App: React.FC = () => {
             <h1 className="text-xl font-bold text-white tracking-tight">Online<span className="text-blue-500">curri</span></h1>
           </a>
           <div className="flex items-center space-x-2">
+            {/* User login/register button */}
+            {!isAuthenticated && (
+              currentUser ? (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-slate-300 hidden md:inline">
+                    <i className="fas fa-user-check mr-1 text-emerald-400"></i>
+                    {currentUser.name}님
+                  </span>
+                  <button onClick={handleUserLogout}
+                    className="flex items-center space-x-1 px-3 py-2 rounded-xl text-sm font-semibold transition-all border bg-slate-600/20 text-slate-400 border-slate-500/30 hover:bg-slate-600/30">
+                    <i className="fas fa-sign-out-alt"></i>
+                    <span className="hidden md:inline">로그아웃</span>
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setShowAuthModal(true)}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all border bg-blue-600/20 text-blue-400 border-blue-500/30 hover:bg-blue-600/30">
+                  <i className="fas fa-user"></i>
+                  <span className="hidden md:inline">로그인/회원가입</span>
+                </button>
+              )
+            )}
+
             {isAuthenticated ? (
               <>
                 <button
@@ -147,7 +223,7 @@ const App: React.FC = () => {
                 className="flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all border bg-slate-600/20 text-slate-400 border-slate-500/30 hover:bg-slate-600/30"
               >
                 <i className="fas fa-lock"></i>
-                <span className="hidden md:inline">관리자 로그인</span>
+                <span className="hidden md:inline">관리자</span>
               </button>
             )}
             {isAdmin && (
@@ -285,6 +361,7 @@ const App: React.FC = () => {
                     </div>
                   </div>
                 )}
+                {isAdmin && <AdminUsersPanel />}
               </div>
             )}
           </div>
@@ -328,7 +405,10 @@ const App: React.FC = () => {
                 <CourseCard
                   key={course.id}
                   course={course}
+                  isAdmin={isAdmin}
+                  currentUser={currentUser}
                   onDelete={isAdmin ? () => handleDeleteCourse(course.id) : undefined}
+                  onMaterialManage={isAdmin ? (c) => setMaterialModalCourse(c) : undefined}
                 />
               ))
             ) : (
@@ -366,6 +446,21 @@ const App: React.FC = () => {
           onAdd={handleAddCourse}
         />
       )}
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onLogin={handleUserLogin}
+      />
+
+      <MaterialModal
+        isOpen={!!materialModalCourse}
+        courseTitle={materialModalCourse?.title || ''}
+        currentUrl={materialModalCourse?.materialUrl}
+        onClose={() => setMaterialModalCourse(null)}
+        onSave={handleMaterialSave}
+        onRemove={handleMaterialRemove}
+      />
     </div>
   );
 };

@@ -1,13 +1,16 @@
 
 import React, { useState } from 'react';
-import { Course } from '../types';
+import { Course, User } from '../types';
 
 interface CourseCardProps {
   course: Course;
   onDelete?: () => void;
+  isAdmin: boolean;
+  currentUser: User | null;
+  onMaterialManage?: (course: Course) => void;
 }
 
-export const CourseCard: React.FC<CourseCardProps> = ({ course, onDelete }) => {
+export const CourseCard: React.FC<CourseCardProps> = ({ course, onDelete, isAdmin, currentUser, onMaterialManage }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -29,7 +32,39 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, onDelete }) => {
           </div>
         </div>
         
-        <div className="flex items-center space-x-1 md:space-x-3">
+        <div className="flex items-center space-x-1 md:space-x-2">
+          {/* 교안 버튼 */}
+          {isAdmin ? (
+            <>
+              {course.materialUrl && (
+                <a href={course.materialUrl} target="_blank" rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg hover:bg-emerald-100 transition-all border border-emerald-200 flex items-center space-x-1">
+                  <i className="fas fa-external-link-alt"></i>
+                  <span className="hidden md:inline">교안바로가기</span>
+                </a>
+              )}
+              <button onClick={e => { e.stopPropagation(); onMaterialManage?.(course); }}
+                className="px-2.5 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg hover:bg-blue-100 transition-all border border-blue-200 flex items-center space-x-1">
+                <i className={`fas ${course.materialUrl ? 'fa-cog' : 'fa-upload'}`}></i>
+                <span className="hidden md:inline">{course.materialUrl ? '교안관리' : '교안업로드'}</span>
+              </button>
+            </>
+          ) : currentUser?.approved && course.materialUrl ? (
+            <a href={course.materialUrl} target="_blank" rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg hover:bg-emerald-100 transition-all border border-emerald-200 flex items-center space-x-1">
+              <i className="fas fa-external-link-alt"></i>
+              <span className="hidden md:inline">교안바로가기</span>
+            </a>
+          ) : course.materialUrl ? (
+            <div className="px-2.5 py-1.5 bg-slate-100 text-slate-400 text-xs font-bold rounded-lg border border-slate-200 flex items-center space-x-1 cursor-not-allowed"
+              title="승인된 회원만 교안을 볼 수 있습니다">
+              <i className="fas fa-lock"></i>
+              <span className="hidden md:inline">교안</span>
+            </div>
+          ) : null}
+
           {onDelete && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
