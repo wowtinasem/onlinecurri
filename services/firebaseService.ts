@@ -41,10 +41,16 @@ export const firebaseService = {
       }
       const courses: Course[] = Object.values(data).map((c: any) => ({
         ...c,
-        curriculum: Array.isArray(c.curriculum) ? c.curriculum : [],
         title: c.title || '',
         platform: c.platform || '',
         instructor: c.instructor || '',
+        curriculum: (Array.isArray(c.curriculum) ? c.curriculum : []).map((major: any) => ({
+          ...major,
+          middles: (Array.isArray(major.middles) ? major.middles : []).map((mid: any) => ({
+            ...mid,
+            minors: Array.isArray(mid.minors) ? mid.minors : [],
+          })),
+        })),
       }));
       callback(courses);
     });
