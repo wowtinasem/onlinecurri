@@ -3,6 +3,7 @@ import {
   getDatabase,
   ref,
   set,
+  get,
   remove,
   onValue,
   off,
@@ -51,5 +52,21 @@ export const firebaseService = {
   async deleteCourse(courseId: string): Promise<void> {
     const courseRef = ref(db, `${COURSES_REF}/${courseId}`);
     await remove(courseRef);
+  },
+
+  async verifyAdminPassword(password: string): Promise<boolean> {
+    const passwordRef = ref(db, 'admin/password');
+    const snapshot = await get(passwordRef);
+    const storedPassword = snapshot.val();
+    if (storedPassword === null) {
+      await set(passwordRef, '0000');
+      return password === '0000';
+    }
+    return password === storedPassword;
+  },
+
+  async changeAdminPassword(newPassword: string): Promise<void> {
+    const passwordRef = ref(db, 'admin/password');
+    await set(passwordRef, newPassword);
   }
 };
