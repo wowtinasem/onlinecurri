@@ -72,7 +72,7 @@ const App: React.FC = () => {
             <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-900/40">
               <i className="fas fa-graduation-cap text-lg"></i>
             </div>
-            <h1 className="text-xl font-bold text-white tracking-tight">CourseVault<span className="text-blue-500">AI</span></h1>
+            <h1 className="text-xl font-bold text-white tracking-tight">Online<span className="text-blue-500">curri</span></h1>
           </div>
           <div className="flex items-center space-x-2">
             <button
@@ -169,8 +169,12 @@ const App: React.FC = () => {
           <div className="space-y-4">
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-16">
-                <i className="fas fa-spinner fa-spin text-3xl text-blue-600 mb-4"></i>
-                <p className="text-slate-500">강좌를 불러오는 중...</p>
+                <div className="text-5xl mb-4 animate-bounce">🧑‍🎓</div>
+                <div className="flex items-center space-x-2 text-slate-500">
+                  <span className="inline-block animate-[walk_1s_steps(2)_infinite] text-2xl">🚶</span>
+                  <span>강좌를 불러오는 중...</span>
+                  <span className="inline-block animate-[walk_1s_steps(2)_infinite_reverse] text-2xl scale-x-[-1]">🚶</span>
+                </div>
               </div>
             ) : filteredCourses.length > 0 ? (
               filteredCourses.map(course => (

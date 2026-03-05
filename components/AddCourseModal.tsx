@@ -225,7 +225,7 @@ export const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose,
                 className="w-full bg-gradient-to-r from-blue-700 to-sky-600 hover:from-blue-800 hover:to-sky-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-100 flex items-center justify-center disabled:opacity-50"
               >
                 {isLoading ? (
-                  <><i className="fas fa-spinner fa-spin mr-2"></i> AI 분석 중...</>
+                  <><span className="inline-block animate-bounce mr-2">🧙</span> AI 분석 중... <span className="inline-block animate-[spin_1s_linear_infinite] ml-1">⭐</span></>
                 ) : (
                   <><i className="fas fa-magic mr-2"></i> 분석 및 가져오기</>
                 )}

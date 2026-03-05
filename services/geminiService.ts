@@ -167,7 +167,7 @@ export const geminiService = {
     const chat = getAI().chats.create({
       model: 'gemini-3-flash-preview',
       config: {
-        systemInstruction: `당신은 CourseVault AI입니다. 사용자의 3단계 계층 구조 강좌 데이터를 바탕으로 학습을 도와주세요.\n\n[보관 중인 강좌 정보]\n${context}`
+        systemInstruction: `당신은 Onlinecurri AI입니다. 사용자의 3단계 계층 구조 강좌 데이터를 바탕으로 학습을 도와주세요.\n\n[보관 중인 강좌 정보]\n${context}`
       },
       history: chatHistory
     });

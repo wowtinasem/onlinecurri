@@ -41,6 +41,12 @@ body {
   animation: fadeIn 0.2s ease-out, zoomIn 0.2s ease-out;
 }
 
+/* Walking character animation */
+@keyframes walk {
+  0% { transform: translateX(-20px); }
+  100% { transform: translateX(20px); }
+}
+
 /* Line clamp utility */
 .line-clamp-1 {
   overflow: hidden;
