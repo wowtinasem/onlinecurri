@@ -56,14 +56,25 @@ export const Chatbot: React.FC<ChatbotProps> = ({ courses }) => {
 
   return (
     <div className="flex flex-col h-[500px] bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-      <div className="bg-slate-900 p-4 flex items-center border-b border-slate-800">
-        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white mr-3 shadow-lg shadow-blue-900/20">
-          <i className="fas fa-robot"></i>
+      <div className="bg-slate-900 p-4 flex items-center justify-between border-b border-slate-800">
+        <div className="flex items-center">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white mr-3 shadow-lg shadow-blue-900/20">
+            <i className="fas fa-robot"></i>
+          </div>
+          <div>
+            <h3 className="text-white font-bold text-sm">보관함 AI 튜터</h3>
+            <p className="text-[10px] text-blue-400 font-medium tracking-wider uppercase">온라인 세션 중</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-white font-bold text-sm">보관함 AI 튜터</h3>
-          <p className="text-[10px] text-blue-400 font-medium tracking-wider uppercase">온라인 세션 중</p>
-        </div>
+        {messages.length > 1 && (
+          <button
+            onClick={() => setMessages([{ role: 'assistant', content: "안녕하세요! 학습 보조 AI입니다. 보관 중인 강좌에 대해 궁금한 점이나 학습 계획을 물어보세요!", timestamp: new Date() }])}
+            className="text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-slate-700/50"
+            title="대화 초기화"
+          >
+            <i className="fas fa-redo-alt text-sm"></i>
+          </button>
+        )}
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
