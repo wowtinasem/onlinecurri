@@ -43,9 +43,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({ courses }) => {
       };
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error: any) {
-      const errorMsg = error?.message === 'API_KEY_MISSING'
-        ? "Gemini API 키가 설정되지 않았습니다. 상단의 'API 키 필요' 버튼을 눌러 키를 입력해주세요."
-        : "연결 중 오류가 발생했습니다. API 키를 확인하고 다시 시도해 주세요.";
+      const errorMsg = "응답 중 오류가 발생했습니다. 다시 시도해 주세요.";
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: errorMsg,

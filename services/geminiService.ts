@@ -151,6 +151,10 @@ export const geminiService = {
   },
 
   async getChatResponse(history: Message[], courses: Course[], userQuery: string): Promise<string> {
+    if (!this.hasApiKey()) {
+      return this.getLocalResponse(courses, userQuery);
+    }
+
     const context = courses.map(c =>
       `강의: ${c.title}. 커리큘럼: ${c.curriculum.map(major =>
         `[대]${major.title}: ${major.middles.map(mid =>
@@ -174,5 +178,105 @@ export const geminiService = {
 
     const response = await chat.sendMessage({ message: userQuery });
     return response.text || "응답을 생성하지 못했습니다.";
+  },
+
+  getLocalResponse(courses: Course[], query: string): string {
+    const q = query.toLowerCase();
+
+    if (courses.length === 0) {
+      return "현재 보관함에 등록된 강좌가 없습니다. 관리자가 강좌를 추가하면 여기서 확인하실 수 있어요!";
+    }
+
+    // 강좌 목록 질문
+    if (q.match(/강좌|목록|리스트|어떤|뭐가|몇 개|몇개|전체|보관함|등록/)) {
+      let reply = `현재 보관함에 ${courses.length}개의 강좌가 있습니다:\n\n`;
+      courses.forEach((c, i) => {
+        const progress = c.curriculum.length > 0
+          ? ` (대목차 ${c.curriculum.length}개)`
+          : '';
+        reply += `${i + 1}. 📚 ${c.title}\n   플랫폼: ${c.platform} | 강사: ${c.instructor}${progress}\n`;
+      });
+      return reply;
+    }
+
+    // 특정 강좌 검색
+    const matched = courses.filter(c =>
+      c.title.toLowerCase().includes(q) ||
+      c.instructor.toLowerCase().includes(q) ||
+      c.platform.toLowerCase().includes(q) ||
+      q.includes(c.title.toLowerCase()) ||
+      q.includes(c.instructor.toLowerCase())
+    );
+
+    if (matched.length > 0) {
+      let reply = '';
+      matched.forEach(c => {
+        reply += `📚 **${c.title}**\n플랫폼: ${c.platform} | 강사: ${c.instructor}\n`;
+        if (c.curriculum.length > 0) {
+          reply += `\n커리큘럼 (${c.curriculum.length}개 대목차):\n`;
+          c.curriculum.forEach((major, i) => {
+            reply += `\n${i + 1}. ${major.title}`;
+            if (major.middles?.length > 0) {
+              major.middles.forEach(mid => {
+                reply += `\n   ├ ${mid.title}`;
+                if (mid.minors?.length > 0) {
+                  mid.minors.forEach(min => {
+                    reply += `\n   │  └ ${min.title}`;
+                  });
+                }
+              });
+            }
+          });
+        }
+        reply += '\n\n';
+      });
+      return reply.trim();
+    }
+
+    // 커리큘럼/내용 질문
+    if (q.match(/커리큘럼|목차|내용|구성|과목|챕터|chapter/)) {
+      let reply = '보관 중인 강좌들의 커리큘럼입니다:\n\n';
+      courses.forEach(c => {
+        reply += `📚 ${c.title}\n`;
+        if (c.curriculum.length > 0) {
+          c.curriculum.forEach((major, i) => {
+            reply += `  ${i + 1}. ${major.title}`;
+            if (major.middles?.length > 0) {
+              reply += ` (${major.middles.length}개 중목차)`;
+            }
+            reply += '\n';
+          });
+        } else {
+          reply += '  (커리큘럼 정보 없음)\n';
+        }
+        reply += '\n';
+      });
+      return reply.trim();
+    }
+
+    // 플랫폼 질문
+    if (q.match(/플랫폼|어디서|사이트/)) {
+      const platforms = [...new Set(courses.map(c => c.platform))];
+      let reply = `등록된 강좌의 플랫폼 목록:\n\n`;
+      platforms.forEach(p => {
+        const count = courses.filter(c => c.platform === p).length;
+        reply += `• ${p} (${count}개 강좌)\n`;
+      });
+      return reply;
+    }
+
+    // 강사 질문
+    if (q.match(/강사|선생|누가|누구/)) {
+      const instructors = [...new Set(courses.map(c => c.instructor))];
+      let reply = `등록된 강좌의 강사 목록:\n\n`;
+      instructors.forEach(inst => {
+        const instrCourses = courses.filter(c => c.instructor === inst);
+        reply += `• ${inst}: ${instrCourses.map(c => c.title).join(', ')}\n`;
+      });
+      return reply;
+    }
+
+    // 기본 응답
+    return `보관함에 ${courses.length}개의 강좌가 등록되어 있습니다. 궁금한 강좌명이나 키워드를 입력해보세요!\n\n예시 질문:\n• "어떤 강좌가 있어?"\n• "커리큘럼 알려줘"\n• "파이썬 강좌 있어?"\n• "강사 목록 알려줘"`;
   }
 };
