@@ -34,7 +34,7 @@ export const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose,
       onAdd({
         id: crypto.randomUUID(),
         title: result.title || '가져온 강좌',
-        platform: result.platform || '웹/링크',
+        platform: platform || result.platform || '웹/링크',
         instructor: result.instructor || '미상',
         curriculum: result.curriculum || []
       });
@@ -89,7 +89,7 @@ export const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose,
         onAdd({
           id: crypto.randomUUID(),
           title: result.title || file.name.split('.')[0],
-          platform: result.platform || '업로드 파일',
+          platform: platform || result.platform || '업로드 파일',
           instructor: result.instructor || '미상',
           curriculum: result.curriculum || []
         });
@@ -199,7 +199,36 @@ export const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose,
           ) : (
             <div className="space-y-4">
               <p className="text-sm text-slate-500 mb-2"><b>강의 URL(링크)</b>, 커리큘럼 텍스트를 붙여넣거나 <b>PDF, Word, Excel, PPT</b> 파일을 업로드하세요.</p>
-              
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">플랫폼</label>
+                <div className="flex flex-wrap gap-2">
+                  {PLATFORM_OPTIONS.map(opt => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setSelectedPlatform(opt)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all border ${
+                        selectedPlatform === opt
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+                {selectedPlatform === '직접입력' && (
+                  <input
+                    type="text"
+                    value={customPlatform}
+                    onChange={e => setCustomPlatform(e.target.value)}
+                    placeholder="플랫폼명을 입력하세요"
+                    className="w-full mt-2 px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all"
+                  />
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">URL 또는 텍스트 입력</label>
                 <textarea 
