@@ -14,10 +14,14 @@ export const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose,
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const PLATFORM_OPTIONS = ['패스트캠퍼스', '인프런', '클래스유', '클래스101', '유데미', '직접입력'];
   const [title, setTitle] = useState('');
-  const [platform, setPlatform] = useState('');
+  const [selectedPlatform, setSelectedPlatform] = useState('');
+  const [customPlatform, setCustomPlatform] = useState('');
   const [instructor, setInstructor] = useState('');
   const [smartInput, setSmartInput] = useState('');
+
+  const platform = selectedPlatform === '직접입력' ? customPlatform : selectedPlatform;
 
   if (!isOpen) return null;
 
@@ -58,7 +62,8 @@ export const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose,
 
   const resetAndClose = () => {
     setTitle('');
-    setPlatform('');
+    setSelectedPlatform('');
+    setCustomPlatform('');
     setInstructor('');
     setSmartInput('');
     setError(null);
@@ -145,27 +150,43 @@ export const AddCourseModal: React.FC<AddCourseModalProps> = ({ isOpen, onClose,
                   className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">플랫폼</label>
-                  <input 
-                    type="text" 
-                    value={platform}
-                    onChange={e => setPlatform(e.target.value)}
-                    placeholder="인프런, Udemy 등"
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all"
-                  />
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">플랫폼</label>
+                <div className="flex flex-wrap gap-2">
+                  {PLATFORM_OPTIONS.map(opt => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setSelectedPlatform(opt)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all border ${
+                        selectedPlatform === opt
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                          : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">강사명</label>
-                  <input 
-                    type="text" 
-                    value={instructor}
-                    onChange={e => setInstructor(e.target.value)}
-                    placeholder="김코딩"
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all"
+                {selectedPlatform === '직접입력' && (
+                  <input
+                    type="text"
+                    value={customPlatform}
+                    onChange={e => setCustomPlatform(e.target.value)}
+                    placeholder="플랫폼명을 입력하세요"
+                    className="w-full mt-2 px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all"
                   />
-                </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">강사명</label>
+                <input
+                  type="text"
+                  value={instructor}
+                  onChange={e => setInstructor(e.target.value)}
+                  placeholder="김코딩"
+                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all"
+                />
               </div>
               <button 
                 onClick={handleManualAdd}
