@@ -113,12 +113,12 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-slate-50/50 pb-12 text-slate-900">
       <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+          <a href="/" onClick={() => window.location.reload()} className="flex items-center space-x-3 cursor-pointer">
             <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-900/40">
               <i className="fas fa-graduation-cap text-lg"></i>
             </div>
             <h1 className="text-xl font-bold text-white tracking-tight">Online<span className="text-blue-500">curri</span></h1>
-          </div>
+          </a>
           <div className="flex items-center space-x-2">
             {isAuthenticated ? (
               <>
