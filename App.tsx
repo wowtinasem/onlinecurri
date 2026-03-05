@@ -1,52 +1,30 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Course } from './types';
 import { CourseCard } from './components/CourseCard';
 import { AddCourseModal } from './components/AddCourseModal';
 import { Chatbot } from './components/Chatbot';
 import { geminiService } from './services/geminiService';
-
-const INITIAL_COURSES: Course[] = [
-  {
-    id: '1',
-    title: "AI 에이전트 마스터 클래스",
-    platform: "인프런",
-    instructor: "김코딩",
-    curriculum: [
-      {
-        id: 'major-1',
-        title: "01. Intro: 왜 내 에이전트는 생각대로 움직이지 않을까?",
-        middles: [
-          {
-            id: 'middle-1',
-            title: "CH01. AI 에이전트와 Agentic AI 그리고 비즈니스 문제",
-            minors: [
-              { id: 'min-1', title: "01. 오리엔테이션: 이 강의에서 무엇을 얻어가는가" },
-              { id: 'min-2', title: "02. AI 에이전트와 Agentic AI, 무엇이 다른가" },
-              { id: 'min-3', title: "03. 비즈니스 문제를 에이전트 관점으로 분해하기" }
-            ]
-          },
-          {
-            id: 'middle-2',
-            title: "CH02. 프롬프트 엔지니어링과 컨텍스트 엔지니어링",
-            minors: [
-              { id: 'min-4', title: "01. 단순 프롬프트 엔지니어링의 한계점" },
-              { id: 'min-5', title: "02. 결과를 바꾸는 데이터, 컨텍스트 엔지니어링이란?" }
-            ]
-          }
-        ]
-      }
-    ]
-  }
-];
+import { firebaseService } from './services/firebaseService';
 
 const App: React.FC = () => {
-  const [courses, setCourses] = useState<Course[]>(INITIAL_COURSES);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [apiKey, setApiKey] = useState(geminiService.getApiKey());
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [tempApiKey, setTempApiKey] = useState('');
+
+  const isAdmin = !!apiKey;
+
+  useEffect(() => {
+    const unsubscribe = firebaseService.subscribeToCourses((firebaseCourses) => {
+      setCourses(firebaseCourses);
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleSaveApiKey = () => {
     if (tempApiKey.trim()) {
@@ -59,20 +37,30 @@ const App: React.FC = () => {
 
   const filteredCourses = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    return courses.filter(c => 
-      c.title.toLowerCase().includes(q) || 
-      c.platform.toLowerCase().includes(q) || 
+    return courses.filter(c =>
+      c.title.toLowerCase().includes(q) ||
+      c.platform.toLowerCase().includes(q) ||
       c.instructor.toLowerCase().includes(q)
     );
   }, [courses, searchQuery]);
 
-  const handleAddCourse = (newCourse: Course) => {
-    setCourses(prev => [newCourse, ...prev]);
+  const handleAddCourse = async (newCourse: Course) => {
+    try {
+      await firebaseService.saveCourse(newCourse);
+    } catch (error) {
+      console.error('Failed to save course:', error);
+      alert('강좌 저장에 실패했습니다. 다시 시도해주세요.');
+    }
   };
 
-  const handleDeleteCourse = (id: string) => {
+  const handleDeleteCourse = async (id: string) => {
     if (window.confirm("이 강좌를 보관함에서 삭제하시겠습니까?")) {
-      setCourses(prev => prev.filter(course => course.id !== id));
+      try {
+        await firebaseService.deleteCourse(id);
+      } catch (error) {
+        console.error('Failed to delete course:', error);
+        alert('강좌 삭제에 실패했습니다. 다시 시도해주세요.');
+      }
     }
   };
 
@@ -98,19 +86,23 @@ const App: React.FC = () => {
               <i className={`fas ${apiKey ? 'fa-key' : 'fa-exclamation-triangle'}`}></i>
               <span className="hidden md:inline">{apiKey ? 'API 키 설정됨' : 'API 키 필요'}</span>
             </button>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="hidden md:flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-900/20 border border-blue-500/50"
-            >
-              <i className="fas fa-plus"></i>
-              <span>강좌 추가하기</span>
-            </button>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="md:hidden w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg"
-            >
-              <i className="fas fa-plus"></i>
-            </button>
+            {isAdmin && (
+              <>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="hidden md:flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-blue-900/20 border border-blue-500/50"
+                >
+                  <i className="fas fa-plus"></i>
+                  <span>강좌 추가하기</span>
+                </button>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="md:hidden w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg"
+                >
+                  <i className="fas fa-plus"></i>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -157,8 +149,8 @@ const App: React.FC = () => {
           <div className="mb-6">
             <div className="relative group">
               <i className="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors"></i>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="강좌명, 강사 또는 플랫폼 검색..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
@@ -175,12 +167,17 @@ const App: React.FC = () => {
           </div>
 
           <div className="space-y-4">
-            {filteredCourses.length > 0 ? (
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <i className="fas fa-spinner fa-spin text-3xl text-blue-600 mb-4"></i>
+                <p className="text-slate-500">강좌를 불러오는 중...</p>
+              </div>
+            ) : filteredCourses.length > 0 ? (
               filteredCourses.map(course => (
-                <CourseCard 
-                  key={course.id} 
-                  course={course} 
-                  onDelete={() => handleDeleteCourse(course.id)} 
+                <CourseCard
+                  key={course.id}
+                  course={course}
+                  onDelete={isAdmin ? () => handleDeleteCourse(course.id) : undefined}
                 />
               ))
             ) : (
@@ -211,11 +208,13 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <AddCourseModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onAdd={handleAddCourse}
-      />
+      {isAdmin && (
+        <AddCourseModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onAdd={handleAddCourse}
+        />
+      )}
     </div>
   );
 };
