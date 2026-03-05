@@ -69,10 +69,11 @@ export const Chatbot: React.FC<ChatbotProps> = ({ courses }) => {
         {messages.length > 1 && (
           <button
             onClick={() => setMessages([{ role: 'assistant', content: "안녕하세요! 학습 보조 AI입니다. 보관 중인 강좌에 대해 궁금한 점이나 학습 계획을 물어보세요!", timestamp: new Date() }])}
-            className="text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-slate-700/50"
+            className="text-slate-400 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-slate-700/50 text-xs font-semibold flex items-center space-x-1"
             title="대화 초기화"
           >
-            <i className="fas fa-redo-alt text-sm"></i>
+            <i className="fas fa-rotate-right"></i>
+            <span>초기화</span>
           </button>
         )}
       </div>
