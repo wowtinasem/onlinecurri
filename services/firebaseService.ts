@@ -39,7 +39,13 @@ export const firebaseService = {
         callback([]);
         return;
       }
-      const courses: Course[] = Object.values(data);
+      const courses: Course[] = Object.values(data).map((c: any) => ({
+        ...c,
+        curriculum: Array.isArray(c.curriculum) ? c.curriculum : [],
+        title: c.title || '',
+        platform: c.platform || '',
+        instructor: c.instructor || '',
+      }));
       callback(courses);
     });
 
